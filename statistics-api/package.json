@@ -16,23 +16,21 @@
   "license": "MIT",
   "author": "Igor Cezar",
   "type": "module",
-  "main": "index.js",
   "scripts": {
     "test": "vitest --run",
     "build": "tsc",
     "start": "node build/index.js",
-    "dev": "ts-node src/index.ts"
+    "dev": "tsx watch src/index.ts",
+    "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
     "@types/express": "^5.0.6",
     "@types/node": "^25.0.9",
     "dotenv": "^17.2.3",
-    "ts-node": "^10.9.2",
+    "tsx": "^4.21.0",
     "typescript": "^5.9.3"
   },
   "dependencies": {
     "express": "^5.2.1"
   }
 }
-
-
