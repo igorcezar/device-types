@@ -3,17 +3,17 @@ import type { Express } from 'express-serve-static-core';
 import routes from './routes/routes.js';
 
 export async function createServer(): Promise<Express> {
-    const server = express();
+  const server = express();
 
-    // Parse JSON request bodies
-    server.use(express.json());
-    
-    server.get('/', (req,res) => {
-        res.send('Hello!')
-    })
+  // Parse JSON request bodies
+  server.use(express.json());
 
-    // Set default routes
-    server.use(routes)
+  server.get('/', (req, res) => {
+    res.send('Hello!');
+  });
 
-    return server;
+  // Set default routes
+  server.use(routes);
+
+  return server;
 }
