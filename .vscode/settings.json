@@ -1,0 +1,63 @@
+{
+  // Formatting
+  "editor.defaultFormatter": "prettier.prettier-vscode",
+  "editor.formatOnSave": true,
+  "editor.formatOnPaste": false,
+
+  // Code Actions on Save
+  "editor.codeActionsOnSave": {
+    "source.fixAll.eslint": "explicit",
+    "source.organizeImports": "never" // Let ESLint perfectionist handle import organization
+  },
+
+  // ESLint
+  "eslint.useFlatConfig": true,
+  "eslint.validate": ["javascript", "typescript"],
+
+  // TypeScript
+  "typescript.tsdk": "node_modules/typescript/lib",
+  "typescript.enablePromptUseWorkspaceTsdk": true,
+  "typescript.preferences.includePackageJsonAutoImports": "on",
+  "typescript.preferences.importModuleSpecifier": "relative",
+  "typescript.updateImportsOnFileMove.enabled": "always",
+  "typescript.inlayHints.parameterNames.enabled": "all",
+  "typescript.inlayHints.variableTypes.enabled": true,
+  "typescript.inlayHints.propertyDeclarationTypes.enabled": true,
+  "typescript.inlayHints.functionLikeReturnTypes.enabled": true,
+
+  // JavaScript
+  "javascript.updateImportsOnFileMove.enabled": "always",
+
+  // Editor
+  "editor.showUnused": true,
+  "editor.suggestSelection": "first",
+  "editor.quickSuggestions": {
+    "strings": true
+  },
+
+  // Problems Panel
+  "problems.decorations.enabled": true,
+  "problems.showCurrentInStatus": true,
+
+  // File Management
+  "files.trimTrailingWhitespace": true,
+  "files.insertFinalNewline": true,
+  "files.trimFinalNewlines": true,
+  "files.eol": "\n",
+
+  // Search Exclusions
+  "search.exclude": {
+    "**/node_modules": true,
+    "**/build": true,
+    "**/.git": true,
+    "**/.eslintcache": true,
+    "**/yarn.lock": true,
+    "**/package-lock.json": true
+  },
+
+  // File Explorer Exclusions
+  "files.exclude": {
+    "**/.git": true,
+    "**/.DS_Store": true
+  }
+}
