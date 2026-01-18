@@ -1,8 +1,10 @@
-import express from 'express';
 import type { Express } from 'express-serve-static-core';
+
+import express from 'express';
+
 import routes from './routes/routes.js';
 
-export async function createServer(): Promise<Express> {
+export function createServer(): Express {
   const server = express();
 
   // Parse JSON request bodies
