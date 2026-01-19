@@ -3,7 +3,7 @@ services:
     container_name: device-db
     image: postgres:18.1-alpine
     environment:
-      POSTGRES_PASSWORD: "99qKBHequrd6veHexXCa"
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
       POSTGRES_DB: device
       POSTGRES_USER: safra
     ports:
