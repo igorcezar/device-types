@@ -1,0 +1,51 @@
+{
+  "name": "device-registration-api",
+  "version": "0.1.0",
+  "description": "Device types registration API",
+  "keywords": [
+    "registration"
+  ],
+  "homepage": "https://github.com/igorcezar/device-types#readme",
+  "bugs": {
+    "url": "https://github.com/igorcezar/device-types/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/igorcezar/device-types.git"
+  },
+  "license": "MIT",
+  "author": "Igor Cezar",
+  "type": "module",
+  "scripts": {
+    "test": "vitest --run",
+    "build": "tsc",
+    "start": "node --env-file .env build/index.js",
+    "dev": "tsx watch --env-file .env src/index.ts",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
+    "lint:fix": "eslint --fix .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "db:migrate": "knex migrate:latest",
+    "db:rollback": "knex migrate:rollback"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.2",
+    "@types/express": "^5.0.6",
+    "@types/node": "^25.0.9",
+    "dotenv": "^17.2.3",
+    "eslint": "^9.39.2",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-perfectionist": "^5.3.1",
+    "eslint-plugin-prettier": "^5.5.5",
+    "prettier": "^3.8.0",
+    "tsx": "^4.21.0",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.53.0"
+  },
+  "dependencies": {
+    "express": "^5.2.1",
+    "knex": "^3.1.0",
+    "pg": "^8.17.1"
+  }
+}
