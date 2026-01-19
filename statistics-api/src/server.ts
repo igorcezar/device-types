@@ -10,10 +10,6 @@ export function createServer(): Express {
   // Parse JSON request bodies
   server.use(express.json());
 
-  server.get('/', (req, res) => {
-    res.send('Hello!');
-  });
-
   // Set default routes
   server.use(routes);
 
