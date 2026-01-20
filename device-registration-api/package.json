@@ -20,14 +20,16 @@
     "test": "vitest --run",
     "build": "tsc",
     "start": "node --env-file .env build/index.js",
-    "dev": "tsx watch --env-file .env src/index.ts",
+    "dev": "tsx watch src/index.ts",
+    "dev:local": "tsx watch --env-file .env src/index.ts",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
     "lint:fix": "eslint --fix .",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "db:migrate": "knex migrate:latest",
-    "db:rollback": "knex migrate:rollback"
+    "migrate": "knex migrate:latest --knexfile src/config/knex.config.ts",
+    "migrate:rollback": "knex migrate:rollback --knexfile src/config/knex.config.ts",
+    "migrate:make": "knex migrate:make --knexfile src/config/knex.config.ts"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.2",

@@ -21,14 +21,19 @@ routes.post('/Device/register', async (req: { body: Auth }, res): Promise<void> 
   const { deviceType, userKey } = req.body;
   console.log('Received data:', { deviceType, userKey });
 
-  await db
+  await db('user_devices')
     .insert({ deviceType, userKey })
-    .into('user_devices')
+    .onConflict('userKey') // Handle conflict on userKey as it's unique
+    .merge() // Update all columns with new values on conflict
     .then(() => {
       res.status(200).send({ statusCode: 200 });
     })
-    .catch((error) => {
-      console.error('Error inserting into user_devices:', error.message);
+    .catch((error: unknown) => {
+      if (error instanceof Error) {
+        console.error('Error inserting into user_devices:', error.message);
+      } else {
+        console.error('An unknown error occurred while inserting into user_devices:', error);
+      }
       res.status(400).send({ statusCode: 400 });
     });
 });

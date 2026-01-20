@@ -1,9 +1,7 @@
-import type { AxiosInstance } from 'axios';
-
-import axios from 'axios';
 import { Router } from 'express';
 
 import db from '../persistence/db.js';
+import { registerDevice } from '../services/deviceRegistration.js';
 
 const routes: Router = Router();
 
@@ -12,51 +10,42 @@ interface Auth {
   userKey: string;
 }
 
-routes.get('/', (req, res) => {
+routes.get('/', (_req, res) => {
   res.send('API operational!');
 });
 
-routes.get('/health', (req, res) => {
+routes.get('/health', (_req, res) => {
   res.status(200).send('OK');
 });
 
 routes.post('/Log/auth', async (req: { body: Auth }, res) => {
   const { deviceType, userKey } = req.body;
   console.log('Received data:', { deviceType, userKey });
-  console.info('Environment Variable DEVICE_REGISTRATION_API:', process.env.DEVICE_REGISTRATION_API);
 
-  const deviceRegistrationApi: AxiosInstance = axios.create({
-    baseURL: process.env.DEVICE_REGISTRATION_API ?? 'http://localhost:3001',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-  });
+  try {
+    const response = await registerDevice(deviceType, userKey);
+    console.log('Response from Device Registration API:', response.data);
 
-  await deviceRegistrationApi
-    .post('/Device/register', { deviceType, userKey })
-    .then((response) => {
-      console.log('Response from DEVICE_REGISTRATION_API:', response.data);
-      res.status(response.status).send({
-        message: 'success',
-        statusCode: response.status,
-      });
-    })
-    .catch((error: unknown) => {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      console.error('Error communicating with DEVICE_REGISTRATION_API:', errorMessage);
-      res.status(400).send({
-        message: 'bad_request',
-        statusCode: 400,
-      });
+    res.status(response.status).send({
+      message: 'success',
+      statusCode: response.status,
     });
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Error communicating with Device Registration API:', errorMessage);
+
+    res.status(400).send({
+      message: 'bad_request',
+      statusCode: 400,
+    });
+  }
 });
 
 routes.get('/Log/auth/statistics', async (req, res) => {
   const { deviceType } = req.query;
 
-  await db
+  await db('user_devices')
     .count('*')
-    .from('user_devices')
     .where({ deviceType })
     .then((result) => {
       const count = Number(result[0]?.count) || 0;

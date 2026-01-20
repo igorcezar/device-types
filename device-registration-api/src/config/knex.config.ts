@@ -1,23 +1,25 @@
 import type { Knex } from 'knex';
+
 import dotenv from 'dotenv';
 
-dotenv.config();
+// Load environment variables from .env file
+dotenv.config({ path: '../../.env' });
 
 /**
  * @type { Object.<string, import("knex").Knex.Config> }
  */
 
-const baseConfig: Knex.Config = {
+const config: Knex.Config = {
   client: 'postgresql',
   connection: {
-    database: process.env.DB_NAME ?? 'device',
+    database: process.env.DB_NAME ?? 'devices',
     host: process.env.DB_HOST ?? 'localhost',
-    password: process.env.DB_PASSWORD ?? 'password',
+    password: process.env.DB_PASSWORD ?? 'postgres',
     port: Number(process.env.DB_PORT) || 5432,
     user: process.env.DB_USER ?? 'postgres',
   },
   migrations: {
-    directory: './migrations',
+    directory: '../../migrations',
     tableName: 'knex_migrations',
   },
   pool: {
@@ -26,4 +28,4 @@ const baseConfig: Knex.Config = {
   },
 };
 
-export default baseConfig;
+export default config;
