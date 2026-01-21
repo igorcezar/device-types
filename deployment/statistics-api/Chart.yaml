@@ -1,0 +1,13 @@
+apiVersion: v2
+name: statistics-api
+description: Device statistics API - publicly accessible statistics service
+type: application
+version: 0.1.0
+appVersion: "0.1.0"
+keywords:
+  - statistics
+  - device-management
+  - api
+maintainers:
+  - name: Igor Cezar
+    email: igorcezar@gmail.com

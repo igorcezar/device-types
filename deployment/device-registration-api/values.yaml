@@ -1,0 +1,206 @@
+# Set to true when deploying to OpenShift
+# This disables hardcoded UIDs (lets OpenShift SCC assign them dynamically)
+openshift: false
+
+replicaCount: 2
+
+image:
+  repository: device-registration-api
+  pullPolicy: IfNotPresent
+  tag: "0.1.0"
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  create: true
+  annotations: {}
+  name: ""
+
+podAnnotations:
+  prometheus.io/scrape: "true"
+  prometheus.io/port: "3001"
+  prometheus.io/path: "/metrics"
+
+# Security context for Kubernetes (with hardcoded UIDs)
+# When openshift=true, UIDs are omitted and assigned dynamically by SCC
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 1000 # Ignored when openshift=true
+  runAsGroup: 1000 # Ignored when openshift=true
+  fsGroup: 1000 # Ignored when openshift=true
+  seccompProfile:
+    type: RuntimeDefault
+
+securityContext:
+  allowPrivilegeEscalation: false
+  capabilities:
+    drop:
+      - ALL
+  readOnlyRootFilesystem: true
+  runAsNonRoot: true
+  runAsUser: 1000 # Ignored when openshift=true
+
+service:
+  type: ClusterIP
+  port: 3001
+  targetPort: 3001
+  annotations: {}
+
+# No ingress - internal service only
+ingress:
+  enabled: false
+
+resources:
+  limits:
+    cpu: 500m
+    memory: 512Mi
+  requests:
+    cpu: 100m
+    memory: 128Mi
+
+autoscaling:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 8
+  targetCPUUtilizationPercentage: 80
+  targetMemoryUtilizationPercentage: 80
+
+livenessProbe:
+  httpGet:
+    path: /health
+    port: http
+  initialDelaySeconds: 30
+  periodSeconds: 10
+  timeoutSeconds: 5
+  failureThreshold: 3
+
+readinessProbe:
+  httpGet:
+    path: /health
+    port: http
+  initialDelaySeconds: 10
+  periodSeconds: 5
+  timeoutSeconds: 3
+  failureThreshold: 3
+
+env:
+  - name: NODE_ENV
+    value: "production"
+  - name: PORT
+    value: "3001"
+
+envFrom:
+  - secretRef:
+      name: device-registration-api-secrets
+  - configMapRef:
+      name: device-registration-api-config
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity:
+  podAntiAffinity:
+    preferredDuringSchedulingIgnoredDuringExecution:
+      - weight: 100
+        podAffinityTerm:
+          labelSelector:
+            matchExpressions:
+              - key: app.kubernetes.io/name
+                operator: In
+                values:
+                  - device-registration-api
+          topologyKey: kubernetes.io/hostname
+
+podDisruptionBudget:
+  enabled: true
+  minAvailable: 1
+
+networkPolicy:
+  enabled: true
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    # Only allow traffic from statistics-api
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: statistics-api
+      ports:
+        - protocol: TCP
+          port: 3001
+  egress:
+    # Allow connection to PostgreSQL
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: postgresql
+      ports:
+        - protocol: TCP
+          port: 5432
+    # Allow DNS
+    - to:
+        - namespaceSelector: {}
+      ports:
+        - protocol: TCP
+          port: 53
+        - protocol: UDP
+          port: 53
+
+# PostgreSQL dependency configuration (shared with statistics-api)
+postgresql:
+  enabled: true
+  auth:
+    username: device_user
+    password: "CHANGE_ME"
+    database: device
+    existingSecret: ""
+  primary:
+    persistence:
+      enabled: true
+      size: 10Gi
+      storageClass: ""
+    resources:
+      limits:
+        cpu: 1000m
+        memory: 1Gi
+      requests:
+        cpu: 250m
+        memory: 256Mi
+    # Security context for PostgreSQL
+    # When openshift=true, fsGroup/runAsUser are omitted for OpenShift SCC compatibility
+    podSecurityContext:
+      enabled: true
+      fsGroup: 1001 # Ignored when openshift=true
+    containerSecurityContext:
+      enabled: true
+      runAsUser: 1001 # Ignored when openshift=true
+      runAsNonRoot: true
+      allowPrivilegeEscalation: false
+      capabilities:
+        drop:
+          - ALL
+  metrics:
+    enabled: true
+    serviceMonitor:
+      enabled: false
+  networkPolicy:
+    enabled: true
+    allowExternal: false
+    # Allow access from both device-registration-api and statistics-api
+    extraIngress:
+      - from:
+          - podSelector:
+              matchLabels:
+                app.kubernetes.io/name: statistics-api
+        ports:
+          - port: 5432
+      - from:
+          - podSelector:
+              matchLabels:
+                app.kubernetes.io/name: device-registration-api
+        ports:
+          - port: 5432

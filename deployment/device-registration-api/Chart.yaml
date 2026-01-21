@@ -1,0 +1,18 @@
+apiVersion: v2
+name: device-registration-api
+description: Device registration API - internal service with PostgreSQL database
+type: application
+version: 0.1.0
+appVersion: "0.1.0"
+keywords:
+  - device-registration
+  - internal-api
+  - postgres
+maintainers:
+  - name: Igor Cezar
+    email: igorcezar@gmail.com
+dependencies:
+  - name: postgresql
+    version: "16.5.0"
+    repository: "https://charts.bitnami.com/bitnami"
+    condition: postgresql.enabled
