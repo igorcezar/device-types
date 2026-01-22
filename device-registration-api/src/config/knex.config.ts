@@ -1,11 +1,11 @@
 import type { Knex } from 'knex';
 
-import dotenv from 'dotenv';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-// Load environment variables from .env file only in local/development environments
-if (process.env.NODE_ENV !== 'production') {
-  dotenv.config({ path: '../../.env' });
-}
+// Get the directory of the current file
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 /**
  * @type { Object.<string, import("knex").Knex.Config> }
@@ -21,7 +21,7 @@ const config: Knex.Config = {
     user: process.env.DB_USER ?? 'postgres',
   },
   migrations: {
-    directory: '../../migrations',
+    directory: path.resolve(__dirname, '../../migrations'),
     tableName: 'knex_migrations',
   },
   pool: {

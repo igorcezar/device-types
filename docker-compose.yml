@@ -5,7 +5,7 @@ services:
     environment:
       POSTGRES_USER: ${DB_USER:-postgres}
       POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
-      POSTGRES_DB: ${DB_NAME:-devices}
+      POSTGRES_DB: ${DB_NAME:-device}
     ports:
       - "5432:5432"
     healthcheck:
@@ -59,7 +59,7 @@ services:
       dockerfile: Dockerfile
       target: builder # Use the builder stage for development
     container_name: device-registration-api
-    command: ["sh", "-c", "yarn migrate && yarn dev"]
+    command: ["sh", "-c", "yarn dev"]
     develop:
       watch: # Watch for changes in package.json to trigger deps rebuild
         - path: device-registration-api/package.json

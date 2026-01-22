@@ -15,7 +15,6 @@ RUN yarn install --frozen-lockfile
 COPY tsconfig.json ./
 COPY src ./src
 
-
 # Build TypeScript
 RUN yarn build
 
@@ -37,6 +36,9 @@ RUN yarn install --frozen-lockfile --production
 
 # Copy built application from builder stage
 COPY --from=builder --chown=node:node /app/build ./build
+
+# Copy migration files
+COPY --chown=node:node migrations ./migrations
 
 # Switch to non-root user for security
 USER node
