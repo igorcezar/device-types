@@ -1,14 +1,16 @@
-name: CI
+name: CI/CD
 
 on:
   push:
     branches:
       - main
+      - develop
     tags:
       - "v*"
   pull_request:
     branches:
       - main
+      - develop
   workflow_dispatch:
     inputs:
       push_to_dockerhub:
@@ -154,7 +156,8 @@ jobs:
       - name: Deploy to Dev
         if: github.ref_name == 'develop'
         run: |
-          helm upgrade --install ${{ matrix.app }}-dev . \
+          # Run helm template in place of upgrade --install for dry-run
+          helm template ${{ matrix.app }}-dev . \
             -f values.dev.yaml \
             --set ${{ matrix.app }}.
             image.tag=${{ github.sha }} \
@@ -164,7 +167,8 @@ jobs:
       - name: Deploy to Staging
         if: github.ref_name == 'main'
         run: |
-          helm upgrade --install ${{ matrix.app }}-staging . \
+          # Run helm template in place of upgrade --install for dry-run
+          helm template ${{ matrix.app }}-staging . \
             -f values.staging.yaml \
             --set ${{ matrix.app }}.image.tag=${{ github.sha }} \
             --namespace ${{ matrix.app }}-staging \
@@ -173,7 +177,8 @@ jobs:
       - name: Deploy to Production
         if: startsWith(github.ref_name, 'v')
         run: |
-          helm upgrade --install ${{ matrix.app }}-prod . \
+          # Run helm template in place of upgrade --install for dry-run
+          helm template ${{ matrix.app }}-prod . \
             -f values.prod.yaml \
             --set ${{ matrix.app }}.image.tag=${{ github.ref_name }} \
             --namespace ${{ matrix.app }}-prod \
