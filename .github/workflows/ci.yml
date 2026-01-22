@@ -1,0 +1,161 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+    tags:
+      - "v*"
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+    inputs:
+      push_to_dockerhub:
+        description: "Push images to DockerHub"
+        required: false
+        default: "true"
+        type: choice
+        options:
+          - "true"
+          - "false"
+
+env:
+  NODE_VERSION: "22"
+
+jobs:
+  lint:
+    name: Lint ${{ matrix.app }}
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        app:
+          - statistics-api
+          - device-registration-api
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "yarn"
+          cache-dependency-path: ${{ matrix.app }}/yarn.lock
+
+      - name: Install dependencies
+        working-directory: ${{ matrix.app }}
+        run: yarn install --frozen-lockfile
+
+      - name: Run ESLint
+        working-directory: ${{ matrix.app }}
+        run: yarn lint
+
+      - name: Check TypeScript types
+        working-directory: ${{ matrix.app }}
+        run: yarn typecheck
+
+      - name: Check code formatting
+        working-directory: ${{ matrix.app }}
+        run: yarn format:check
+
+  build:
+    name: Build and Push ${{ matrix.app }}
+    runs-on: ubuntu-latest
+    needs: lint
+    strategy:
+      matrix:
+        app:
+          - statistics-api
+          - device-registration-api
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "yarn"
+          cache-dependency-path: ${{ matrix.app }}/yarn.lock
+
+      - name: Install dependencies
+        working-directory: ${{ matrix.app }}
+        run: yarn install --frozen-lockfile
+
+      - name: Build TypeScript
+        working-directory: ${{ matrix.app }}
+        run: yarn build
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to DockerHub
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Extract metadata for Docker
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ secrets.DOCKERHUB_USERNAME }}/${{ matrix.app }}
+          tags: |
+            # Tag with branch name
+            type=ref,event=branch
+            # Tag with PR number
+            type=ref,event=pr
+            # Tag with git tag (semver)
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{major}}
+            # Tag with commit SHA (short - 7 chars) for all builds
+            type=sha,format=short
+            # Tag with branch-prefixed SHA for main branch
+            type=sha,prefix={{branch}}-,enable={{is_default_branch}}
+            # Latest tag for main branch
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: ${{ matrix.app }}
+          file: ${{ matrix.app }}/Dockerfile
+          push: ${{ github.event_name != 'pull_request' && (github.event.inputs.push_to_dockerhub != 'false') }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          platforms: linux/amd64,linux/arm64
+
+      - name: Image digest
+        run: echo ${{ steps.meta.outputs.digest }}
+
+  summary:
+    name: Build Summary
+    runs-on: ubuntu-latest
+    needs: [lint, build]
+    if: always()
+
+    steps:
+      - name: Check workflow status
+        run: |
+          if [ "${{ needs.lint.result }}" != "success" ]; then
+            echo "❌ Lint failed"
+            exit 1
+          fi
+
+          if [ "${{ needs.build.result }}" != "success" ]; then
+            echo "❌ Build failed"
+            exit 1
+          fi
+
+          echo "✅ All jobs completed successfully"
+          echo ""
+          echo "📦 Images built and pushed:"
+          echo "  - statistics-api"
+          echo "  - device-registration-api"
