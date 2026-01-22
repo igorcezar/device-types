@@ -2,8 +2,10 @@ import type { Knex } from 'knex';
 
 import dotenv from 'dotenv';
 
-// Load environment variables from .env file
-dotenv.config({ path: '../../.env' });
+// Load environment variables from .env file only in local/development environments
+if (process.env.NODE_ENV !== 'production') {
+  dotenv.config({ path: '../../.env' });
+}
 
 /**
  * @type { Object.<string, import("knex").Knex.Config> }
