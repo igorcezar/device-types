@@ -113,10 +113,8 @@ jobs:
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
             type=semver,pattern={{major}}
-            # Tag with commit SHA (short - 7 chars) for all builds
-            type=sha,format=short
-            # Tag with branch-prefixed SHA for main branch
-            type=sha,prefix={{branch}}-,enable={{is_default_branch}}
+            # Tag with commit SHA for all builds
+            type=sha,format=long,prefix=
             # Latest tag for main branch
             type=raw,value=latest,enable={{is_default_branch}}
 
@@ -135,27 +133,48 @@ jobs:
       - name: Image digest
         run: echo ${{ steps.meta.outputs.digest }}
 
-  summary:
-    name: Build Summary
+  deploy:
     runs-on: ubuntu-latest
-    needs: [lint, build]
-    if: always()
-
+    needs: build
+    if: github.event_name != 'pull_request'
+    defaults:
+      run:
+        working-directory: ./deployment/${{ matrix.app }}
+    strategy:
+      matrix:
+        app:
+          - statistics-api
+          - device-registration-api
     steps:
-      - name: Check workflow status
+      - uses: actions/checkout@v4
+
+      - name: Update Helm dependencies
+        run: helm dependency update
+
+      - name: Deploy to Dev
+        if: github.ref_name == 'develop'
         run: |
-          if [ "${{ needs.lint.result }}" != "success" ]; then
-            echo "❌ Lint failed"
-            exit 1
-          fi
+          helm upgrade --install ${{ matrix.app }}-dev . \
+            -f values.dev.yaml \
+            --set ${{ matrix.app }}.
+            image.tag=${{ github.sha }} \
+            --namespace ${{ matrix.app }}-dev \
+            --dry-run
 
-          if [ "${{ needs.build.result }}" != "success" ]; then
-            echo "❌ Build failed"
-            exit 1
-          fi
+      - name: Deploy to Staging
+        if: github.ref_name == 'main'
+        run: |
+          helm upgrade --install ${{ matrix.app }}-staging . \
+            -f values.staging.yaml \
+            --set ${{ matrix.app }}.image.tag=${{ github.sha }} \
+            --namespace ${{ matrix.app }}-staging \
+            --dry-run
 
-          echo "✅ All jobs completed successfully"
-          echo ""
-          echo "📦 Images built and pushed:"
-          echo "  - statistics-api"
-          echo "  - device-registration-api"
+      - name: Deploy to Production
+        if: startsWith(github.ref_name, 'v')
+        run: |
+          helm upgrade --install ${{ matrix.app }}-prod . \
+            -f values.prod.yaml \
+            --set ${{ matrix.app }}.image.tag=${{ github.ref_name }} \
+            --namespace ${{ matrix.app }}-prod \
+            --dry-run
