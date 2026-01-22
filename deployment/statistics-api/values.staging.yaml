@@ -6,9 +6,9 @@ openshift: false
 replicaCount: 2
 
 image:
-  repository: statistics-api
+  repository: igorcezar/statistics-api
   pullPolicy: IfNotPresent
-  tag: "0.1.0"
+  tag: "latest"
 
 imagePullSecrets: []
 nameOverride: ""
@@ -28,9 +28,9 @@ podAnnotations:
 # When openshift=true, UIDs are omitted and assigned dynamically by SCC
 podSecurityContext:
   runAsNonRoot: true
-  runAsUser: 1000  # Ignored when openshift=true
-  runAsGroup: 1000  # Ignored when openshift=true
-  fsGroup: 1000  # Ignored when openshift=true
+  runAsUser: 1000 # Ignored when openshift=true
+  runAsGroup: 1000 # Ignored when openshift=true
+  fsGroup: 1000 # Ignored when openshift=true
   seccompProfile:
     type: RuntimeDefault
 
@@ -41,7 +41,7 @@ securityContext:
       - ALL
   readOnlyRootFilesystem: true
   runAsNonRoot: true
-  runAsUser: 1000  # Ignored when openshift=true
+  runAsUser: 1000 # Ignored when openshift=true
 
 service:
   type: ClusterIP
@@ -69,7 +69,7 @@ ingress:
 
 # Route for OpenShift (only used when openshift=true)
 route:
-  enabled: false  # Automatically enabled when openshift=true
+  enabled: false # Automatically enabled when openshift=true
   host: statistics-api.apps.openshift.example.com
   annotations: {}
   tls:
@@ -121,12 +121,12 @@ env:
     value: "device-registration-api-postgresql"
   - name: DB_PORT
     value: "5432"
+  - name: ENV
+    value: "staging"
 
 envFrom:
   - secretRef:
       name: statistics-api-secrets
-  - configMapRef:
-      name: statistics-api-config
 
 nodeSelector: {}
 
@@ -160,10 +160,10 @@ networkPolicy:
     - from:
         - namespaceSelector:
             matchLabels:
-              name: ingress-nginx  # Kubernetes
+              name: ingress-nginx # Kubernetes
         - namespaceSelector:
             matchLabels:
-              network.openshift.io/policy-group: ingress  # OpenShift
+              network.openshift.io/policy-group: ingress # OpenShift
       ports:
         - protocol: TCP
           port: 3000

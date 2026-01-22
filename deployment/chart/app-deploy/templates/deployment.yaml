@@ -1,16 +1,16 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "device-registration-api.fullname" . }}
+  name: {{ include "app-deploy.fullname" . }}
   labels:
-    {{- include "device-registration-api.labels" . | nindent 4 }}
+    {{- include "app-deploy.labels" . | nindent 4 }}
 spec:
   {{- if not .Values.autoscaling.enabled }}
   replicas: {{ .Values.replicaCount }}
   {{- end }}
   selector:
     matchLabels:
-      {{- include "device-registration-api.selectorLabels" . | nindent 6 }}
+      {{- include "app-deploy.selectorLabels" . | nindent 6 }}
   template:
     metadata:
       annotations:
@@ -19,13 +19,13 @@ spec:
         {{- toYaml . | nindent 8 }}
         {{- end }}
       labels:
-        {{- include "device-registration-api.selectorLabels" . | nindent 8 }}
+        {{- include "app-deploy.selectorLabels" . | nindent 8 }}
     spec:
       {{- with .Values.imagePullSecrets }}
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      serviceAccountName: {{ include "device-registration-api.serviceAccountName" . }}
+      serviceAccountName: {{ include "app-deploy.serviceAccountName" . }}
       securityContext:
         {{- if .Values.openshift }}
         # OpenShift SCC assigns UIDs dynamically
@@ -36,19 +36,26 @@ spec:
         # Kubernetes with hardcoded UIDs
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
         {{- end }}
+      {{- if .Values.initContainers }}
       initContainers:
-      - name: wait-for-db
-        image: busybox:1.36
-        command: ['sh', '-c', 'until nc -z {{ include "device-registration-api.fullname" . }}-postgresql 5432; do echo waiting for db; sleep 2; done;']
+      {{- range .Values.initContainers }}
+      - name: {{ .name }}
+        image: {{ .image }}
+        command: {{ toYaml .command | nindent 10 }}
+        {{- if .securityContext }}
         securityContext:
+          {{- if $.Values.openshift }}
           allowPrivilegeEscalation: false
           capabilities:
             drop:
               - ALL
           runAsNonRoot: true
-          {{- if not .Values.openshift }}
-          runAsUser: 1000
+          {{- else }}
+          {{- toYaml .securityContext | nindent 12 }}
           {{- end }}
+        {{- end }}
+      {{- end }}
+      {{- end }}
       containers:
       - name: {{ .Chart.Name }}
         securityContext:
@@ -70,16 +77,24 @@ spec:
         - name: http
           containerPort: {{ .Values.service.targetPort }}
           protocol: TCP
+        {{- if .Values.livenessProbe }}
         livenessProbe:
           {{- toYaml .Values.livenessProbe | nindent 12 }}
+        {{- end }}
+        {{- if .Values.readinessProbe }}
         readinessProbe:
           {{- toYaml .Values.readinessProbe | nindent 12 }}
+        {{- end }}
         resources:
           {{- toYaml .Values.resources | nindent 12 }}
+        {{- if .Values.env }}
         env:
           {{- toYaml .Values.env | nindent 12 }}
+        {{- end }}
+        {{- if .Values.envFrom }}
         envFrom:
           {{- toYaml .Values.envFrom | nindent 12 }}
+        {{- end }}
         volumeMounts:
         - name: tmp
           mountPath: /tmp

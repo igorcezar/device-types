@@ -2,9 +2,9 @@
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: {{ include "statistics-api.fullname" . }}
+  name: {{ include "app-deploy.fullname" . }}
   labels:
-    {{- include "statistics-api.labels" . | nindent 4 }}
+    {{- include "app-deploy.labels" . | nindent 4 }}
   {{- with .Values.ingress.annotations }}
   annotations:
     {{- toYaml . | nindent 4 }}
@@ -33,7 +33,7 @@ spec:
             pathType: {{ .pathType }}
             backend:
               service:
-                name: {{ include "statistics-api.fullname" $ }}
+                name: {{ include "app-deploy.fullname" $ }}
                 port:
                   number: {{ $.Values.service.port }}
           {{- end }}

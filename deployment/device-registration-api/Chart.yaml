@@ -12,6 +12,10 @@ maintainers:
   - name: Igor Cezar
     email: igorcezar@gmail.com
 dependencies:
+  - name: app-deploy
+    version: "0.1.0"
+    repository: "file://../chart/app-deploy"
+    alias: device-registration-api
   - name: postgresql
     version: "16.5.0"
     repository: "https://charts.bitnami.com/bitnami"

@@ -2,9 +2,9 @@
 apiVersion: route.openshift.io/v1
 kind: Route
 metadata:
-  name: {{ include "statistics-api.fullname" . }}
+  name: {{ include "app-deploy.fullname" . }}
   labels:
-    {{- include "statistics-api.labels" . | nindent 4 }}
+    {{- include "app-deploy.labels" . | nindent 4 }}
   {{- with .Values.route.annotations }}
   annotations:
     {{- toYaml . | nindent 4 }}
@@ -13,7 +13,7 @@ spec:
   host: {{ .Values.route.host }}
   to:
     kind: Service
-    name: {{ include "statistics-api.fullname" . }}
+    name: {{ include "app-deploy.fullname" . }}
     weight: 100
   port:
     targetPort: http

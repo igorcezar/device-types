@@ -16,3 +16,4 @@
 OWNERS
 charts/
 Chart.lock
+values-*.yaml

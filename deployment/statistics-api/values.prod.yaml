@@ -1,13 +1,14 @@
 # Set to true when deploying to OpenShift
 # This disables hardcoded UIDs (lets OpenShift SCC assign them dynamically)
+# and enables Route instead of Ingress
 openshift: false
 
 replicaCount: 2
 
 image:
-  repository: device-registration-api
+  repository: igorcezar/statistics-api
   pullPolicy: IfNotPresent
-  tag: "0.1.0"
+  tag: "sha-d4fed29"
 
 imagePullSecrets: []
 nameOverride: ""
@@ -20,7 +21,7 @@ serviceAccount:
 
 podAnnotations:
   prometheus.io/scrape: "true"
-  prometheus.io/port: "3001"
+  prometheus.io/port: "3000"
   prometheus.io/path: "/metrics"
 
 # Security context for Kubernetes (with hardcoded UIDs)
@@ -44,13 +45,36 @@ securityContext:
 
 service:
   type: ClusterIP
-  port: 3001
-  targetPort: 3001
+  port: 3000
+  targetPort: 3000
   annotations: {}
 
-# No ingress - internal service only
+# Ingress for Kubernetes (disabled when openshift=true)
 ingress:
-  enabled: false
+  enabled: true
+  className: "nginx"
+  annotations:
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    nginx.ingress.kubernetes.io/rate-limit: "100"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+  hosts:
+    - host: statistics-api.example.com
+      paths:
+        - path: /
+          pathType: Prefix
+  tls:
+    - secretName: statistics-api-tls
+      hosts:
+        - statistics-api.example.com
+
+# Route for OpenShift (only used when openshift=true)
+route:
+  enabled: false # Automatically enabled when openshift=true
+  host: statistics-api.apps.openshift.example.com
+  annotations: {}
+  tls:
+    termination: edge
+    insecureEdgeTerminationPolicy: Redirect
 
 resources:
   limits:
@@ -63,7 +87,7 @@ resources:
 autoscaling:
   enabled: true
   minReplicas: 2
-  maxReplicas: 8
+  maxReplicas: 10
   targetCPUUtilizationPercentage: 80
   targetMemoryUtilizationPercentage: 80
 
@@ -89,13 +113,20 @@ env:
   - name: NODE_ENV
     value: "production"
   - name: PORT
-    value: "3001"
+    value: "3000"
+  - name: DEVICE_REGISTRATION_API
+    value: "http://device-registration-api:3001"
+  # Database connection (shared with device-registration-api)
+  - name: DB_HOST
+    value: "device-registration-api-postgresql"
+  - name: DB_PORT
+    value: "5432"
+  - name: ENV
+    value: "prod"
 
 envFrom:
   - secretRef:
-      name: device-registration-api-secrets
-  - configMapRef:
-      name: device-registration-api-config
+      name: statistics-api-secrets
 
 nodeSelector: {}
 
@@ -111,7 +142,7 @@ affinity:
               - key: app.kubernetes.io/name
                 operator: In
                 values:
-                  - device-registration-api
+                  - statistics-api
           topologyKey: kubernetes.io/hostname
 
 podDisruptionBudget:
@@ -124,16 +155,28 @@ networkPolicy:
     - Ingress
     - Egress
   ingress:
-    # Only allow traffic from statistics-api
+    # For Kubernetes: allow from ingress-nginx namespace
+    # For OpenShift: allow from ingress router (use network.openshift.io/policy-group: ingress)
     - from:
+        - namespaceSelector:
+            matchLabels:
+              name: ingress-nginx # Kubernetes
+        - namespaceSelector:
+            matchLabels:
+              network.openshift.io/policy-group: ingress # OpenShift
+      ports:
+        - protocol: TCP
+          port: 3000
+  egress:
+    # Allow connection to device-registration-api
+    - to:
         - podSelector:
             matchLabels:
-              app.kubernetes.io/name: statistics-api
+              app.kubernetes.io/name: device-registration-api
       ports:
         - protocol: TCP
           port: 3001
-  egress:
-    # Allow connection to PostgreSQL
+    # Allow connection to PostgreSQL (shared database)
     - to:
         - podSelector:
             matchLabels:
@@ -149,58 +192,3 @@ networkPolicy:
           port: 53
         - protocol: UDP
           port: 53
-
-# PostgreSQL dependency configuration (shared with statistics-api)
-postgresql:
-  enabled: true
-  auth:
-    username: device_user
-    password: "CHANGE_ME"
-    database: device
-    existingSecret: ""
-  primary:
-    persistence:
-      enabled: true
-      size: 10Gi
-      storageClass: ""
-    resources:
-      limits:
-        cpu: 1000m
-        memory: 1Gi
-      requests:
-        cpu: 250m
-        memory: 256Mi
-    # Security context for PostgreSQL
-    # When openshift=true, fsGroup/runAsUser are omitted for OpenShift SCC compatibility
-    podSecurityContext:
-      enabled: true
-      fsGroup: 1001 # Ignored when openshift=true
-    containerSecurityContext:
-      enabled: true
-      runAsUser: 1001 # Ignored when openshift=true
-      runAsNonRoot: true
-      allowPrivilegeEscalation: false
-      capabilities:
-        drop:
-          - ALL
-  metrics:
-    enabled: true
-    serviceMonitor:
-      enabled: false
-  networkPolicy:
-    enabled: true
-    allowExternal: false
-    # Allow access from both device-registration-api and statistics-api
-    extraIngress:
-      - from:
-          - podSelector:
-              matchLabels:
-                app.kubernetes.io/name: statistics-api
-        ports:
-          - port: 5432
-      - from:
-          - podSelector:
-              matchLabels:
-                app.kubernetes.io/name: device-registration-api
-        ports:
-          - port: 5432
