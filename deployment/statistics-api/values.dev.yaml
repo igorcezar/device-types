@@ -116,10 +116,10 @@ statistics-api:
     - name: PORT
       value: "3000"
     - name: DEVICE_REGISTRATION_API
-      value: "http://device-registration-api.device-registration-api:3001"
+      value: "http://device-registration-api-dev.device-registration-api-dev:3001"
     # Database connection (shared with device-registration-api)
     - name: DB_HOST
-      value: "device-registration-api-postgresql.device-registration-api"
+      value: "device-registration-api-dev-postgresql.device-registration-api-dev"
     - name: DB_PORT
       value: "5432"
     - name: ENV

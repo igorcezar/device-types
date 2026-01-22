@@ -115,10 +115,10 @@ env:
   - name: PORT
     value: "3000"
   - name: DEVICE_REGISTRATION_API
-    value: "http://device-registration-api:3001"
+    value: "http://device-registration-api-prod.device-registration-api-prod:3001"
   # Database connection (shared with device-registration-api)
   - name: DB_HOST
-    value: "device-registration-api-postgresql"
+    value: "device-registration-api-prod-postgresql.device-registration-api-prod"
   - name: DB_PORT
     value: "5432"
   - name: ENV
